@@ -1,1 +1,1 @@
-# Rationality-Quotient-RQ-
+# Rationality-Quotient-RQ
