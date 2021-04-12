@@ -1,0 +1,232 @@
+---
+title: "P4-P5 STAT 300"
+output:
+  pdf_document: default
+  html_document: default
+---
+---
+title: "P5"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(naniar)
+library(ggpubr)
+```
+
+
+```{r}
+df = read.csv("RQ_dat.csv",header =TRUE)
+df.data = as.data.frame(df)
+```
+
+```{r}
+str(df.data)
+```
+
+```{r}
+df.data$treat <- as.factor(df.data$treat)
+df.data$rq <- as.numeric(df.data$rq)
+```
+
+```{r}
+str(df.data)
+```
+
+```{r}
+tapply(df.data$rq, df.data$treat, summary)
+```
+
+
+
+
+```{r}
+ggplot(df.data,aes(y=treat, x = rq)) + geom_boxplot()+coord_flip()+
+  xlab("Treatment group")+ylab("Rational Quotient Score")+labs(title="Treat Boxplot")
+
+#geom_jitter(width=0.1,alpha=0.2)
+  
+```
+
+## Histogram: 
+```{r}
+ggplot(df.data, aes(x = rq,color=treat, fill =treat))+geom_density(alpha =0.25 )
+  
+```
+
+
+
+
+## Without replace the outlier
+
+```{r}
+data_aov_woreplace = aov(rq~treat, data = df.data)
+summary(data_aov_woreplace)
+```
+
+
+```{r}
+pairwise.t.test(df.data$rq, df.data$treat, p.adj ="none")
+```
+
+
+
+```{r}
+pairwise.t.test(df.data$rq, df.data$treat, p.adj ="bonf")
+```
+
+
+
+```{r}
+pairwise.t.test(df.data$rq, df.data$treat, p.adj ="holm")
+```
+
+### use the TuckyHSD 
+```{r}
+TukeyHSD(data_aov_woreplace)
+```
+
+```{r}
+plot(TukeyHSD(data_aov_woreplace))
+```
+
+
+# Replace NA if out of range 0 - 20
+
+```{r}
+tapply(df.data$rq, df.data$treat, summary)
+```
+
+
+```{r}
+
+df.data <- replace_with_na_at(df.data, "rq", ~.x < 0 | .x >20 )
+```
+
+
+
+```{r}
+tapply(df.data$rq, df.data$treat, summary)
+```
+
+## delete the value is out of 0 to 20
+```{r}
+df.data <- df.data[!is.na(df.data$rq), ]
+```
+
+
+```{r}
+with(df.data, rq<=0 | rq <=20)
+```
+
+```{r}
+df.mod <- lm(rq ~treat, data = df.data)
+```
+
+```{r fig.width=10, fig.height=8}
+par(mfrow=c(2,2))
+plot(df.mod)
+
+```
+
+```{r}
+## if only want the one plot use, 1 = residual plot, 2 = normal qq, 3 = standarized residual, 4 = residuals vsleverage
+# plot(df.mod, which = 1)
+
+```
+
+  
+## do transformation: 
+
+```{r}
+df.data$logrq <- log(df.data$rq+1) 
+```
+
+```{r}
+df.mod.log <- lm(logrq ~treat, data = df.data)
+```
+
+```{r fig.width=10, fig.height=8}
+par(mfrow=c(2,2))
+plot(df.mod.log)
+```
+
+```{r}
+# compare nonlog and log residuals and fitted, more close to dashed line
+par(mfrow=c(1,2))
+plot(df.mod, which =1)
+plot(df.mod.log, which = 1)
+
+```
+
+```{r}
+## compare qq plot 
+par(mfrow=c(1,2))
+plot(df.mod, which =2)
+plot(df.mod.log, which = 2)
+```
+
+
+```{r}
+
+normalqr <- ggplot(df.data,aes(y=treat, x = rq)) + geom_boxplot()+coord_flip()+
+  xlab("Treatment group")+ylab("Rational Quotient Score")+labs(title="Original Treat Boxplot")
+## after delete 30, and logrq plot 
+logqr <- ggplot(df.data,aes(y=treat, x = logrq)) + geom_boxplot()+coord_flip()+
+  xlab("Treatment group")+ylab("Log Rational Quotient Score")+labs(title="Log(RQ+1) Transformation  Boxplot")
+
+ggarrange(normalqr,logqr,
+                    ncol =2, nrow = 1)
+```
+
+```{r fig.width=10}
+normalqrden<- ggplot(df.data, aes(x = rq,color=treat, fill =treat))+geom_density(alpha =0.25 )
+logqrden<- ggplot(df.data, aes(x = logrq,color=treat, fill =treat))+geom_density(alpha =0.25 )
+ggarrange(normalqrden,logqrden,
+                    ncol =2, nrow = 1)
+```
+
+
+```{r}
+data_aov_delet = aov(logrq~treat, data = df.data)
+summary(data_aov_delet)
+```
+
+
+## the following three way, we can selected any one we want. 
+```{r}
+pairwise.t.test(df.data$logrq, df.data$treat, p.adj ="none")
+```
+
+
+
+```{r}
+pairwise.t.test(df.data$logrq, df.data$treat, p.adj ="bonf")
+```
+
+
+
+```{r}
+pairwise.t.test(df.data$logrq, df.data$treat, p.adj ="holm")
+```
+
+
+### use the TuckyHSD compare the time affect. 
+```{r}
+TukeyHSD(data_aov_delet)
+```
+
+
+```{r}
+plot(TukeyHSD(data_aov_delet))
+```
+
+
+
+
+
+
